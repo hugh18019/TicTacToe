@@ -39,13 +39,11 @@ def actions(board):
     Returns set of all possible actions (i, j) available on the board.
     """
     curMoves = set()
-    processed = set()
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if board[i][j] == X and board[i][j] == O and (i, j) not in processed:
+            if board[i][j] == X and board[i][j] == O:
                 move = (i, j)
                 curMoves.add(move)
-                processed.add(move)
 
     return curMoves
 
