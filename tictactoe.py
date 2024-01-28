@@ -38,14 +38,29 @@ def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
+    def getNextMoves(move):
+        moves = []
+        i, j = move
+        if i + 1 > len(board) - 1 or i - 1 < 0 or j + 1 > len(board) - 1 or j - 1 < 0:
+            return moves
+        for k in [-1, 0, 1]:
+            for l in [1, 0, -1]:
+                if board[i + k][i + l] == EMPTY:
+                    moves.append((i, j))
+        return moves
+
+    processed = set()
     curMoves = set()
+    nextMoves = set()
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if board[i][j] == X and board[i][j] == O:
-                move = (i, j)
-                curMoves.add(move)
+            if (board[i][j] == X or board[i][j] == O) and (i, j) not in processed:
+                curMove = (i, j)
+                curMoves.add(curMove)
+                processed.add(curMove)
+                nextMoves.add(getNextMoves(curMove))
 
-    return curMoves
+    return nextMoves
 
 
 def result(board, action):
