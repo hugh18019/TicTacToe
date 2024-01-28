@@ -38,13 +38,16 @@ def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    moves = []
+    curMoves = set()
+    processed = set()
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if board[i][j] != X and board[i][j] != O:
-                moves.append((i, j))
+            if board[i][j] == X and board[i][j] == O and move not in processed:
+                move = (i, j)
+                curMoves.add(move)
+                processed.add(move)
 
-    return moves
+    return curMoves
 
 
 def result(board, action):
@@ -55,6 +58,7 @@ def result(board, action):
     i, j = action
     nextPlayer = player(board) 
     newBoard[i][j] = nextPlayer
+    return newBoard
 
 
 def winner(board):
@@ -78,16 +82,19 @@ def terminal(board):
     xColCount, oColCount = 0, 0
     xDiagCount, xAntiDiagCount = 0, 0
     oDiagCount, oAntiDiagCount = 0, 0
-    win = -1
+    win = False
+    fillCount = 1
 
     for i in range(len(board)):
         for j in range(len(board)):
-            if (board[i][j] == 0):
+            if (board[i][j] == X):
                 xRowCount += 1
                 xColCount += 1
-            if (board[i][j] == 255):
+                fillCount += 1
+            if (board[i][j] == O):
                 oRowCount += 1
                 oColCount += 1
+                fillCount += 1
 
             if i == j:
                 xDiagCount += board[i][j] == X
@@ -97,10 +104,14 @@ def terminal(board):
                 oAntiDiagCount += board[i][j] == O
 
             if xRowCount == len(board) or xColCount == len(board) or xDiagCount == len(board) or xAntiDiagCount == len(board):
-                win = X
+                win = True
                 break
             if oRowCount == len(board) or oColCount == len(board) or oDiagCount == len(board) or oAntiDiagCount == len(board):
-                win = O
+                win = True
+                break
+
+            if fillCount >= len(board) * len(board[0]) - 2:
+                win = True
                 break
     
     return win
@@ -109,10 +120,13 @@ def utility(board):
     """
     Returns 1 if X has won the game, -1 if O has won, 0 otherwise.
     """
-    if terminal(board) == X:
-        return 1
-    if terminal(board) == O:
-        return -1
+    isTerminal = terminal(board)
+    nextPlayer = player(board)
+    player = X if nextPlayer == O else O
+
+    if isTerminal:
+        return 1 if player == X else -1
+    
     return 0
 
 
