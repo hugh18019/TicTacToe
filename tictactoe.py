@@ -54,7 +54,7 @@ def actions(board):
     nextMoves = set()
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if (board[i][j] == X or board[i][j] == O) and (i, j) not in processed:
+            if (board[i][j] == EMPTY) and (i, j) not in processed:
                 curMove = (i, j)
                 curMoves.add(curMove)
                 processed.add(curMove)
@@ -79,11 +79,11 @@ def winner(board):
     Returns the winner of the game, if there is one.
     """
     win = utility(board)
-    if win == 0:
+    if win == 1: 
         return X
-    if win == 255:
+    if win == -1:
         return O
-    return win
+    return None
 
 
 def terminal(board):
@@ -157,7 +157,7 @@ def minimax(board):
 
 def maxValue(board):
     value = utility(board)
-    if value != -1:
+    if value != 0:
         return value
     v = -1 * math.inf
     for a in actions(board):
@@ -166,7 +166,7 @@ def maxValue(board):
 
 def minValue(board):
     value = utility(board)
-    if value != -1:
+    if value != 0:
         return value
     v = math.inf
     for a in actions(board):
