@@ -42,7 +42,7 @@ def actions(board):
     processed = set()
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if board[i][j] == X and board[i][j] == O and move not in processed:
+            if board[i][j] == X and board[i][j] == O and (i, j) not in processed:
                 move = (i, j)
                 curMoves.add(move)
                 processed.add(move)
