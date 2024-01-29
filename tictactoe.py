@@ -9,7 +9,20 @@ from copy import deepcopy
 X = "X"
 O = "O"
 EMPTY = None
-
+MOVES_TAKEN = set()
+FILLED_BOARD = { 
+    "xRows": defaultdict(lambda: 0), 
+    "xCols": defaultdict(lambda: 0),
+    "oRows": defaultdict(lambda: 0), 
+    "oCols": defaultdict(lambda: 0),
+    "xDiag": 0,
+    "xAntiDiag": 0,
+    "oDiag": 0,
+    "oAntiDiag": 0
+}
+OUT_OF_BOUND_EXCEPTION = "out of bound error"
+MOVE_TAKEN_EXCEPTION = "move taken"
+WINNER = None
 
 def initial_state():
     """
@@ -19,6 +32,9 @@ def initial_state():
             [EMPTY, EMPTY, EMPTY],
             [EMPTY, EMPTY, EMPTY]]
 
+def throw_exception_or_continue(condition, exception):
+    if (condition):
+        raise exception
 
 def player(board):
     """
@@ -38,37 +54,53 @@ def actions(board):
     """
     Returns set of all possible actions (i, j) available on the board.
     """
-    def getNextMoves(move):
-        moves = []
-        i, j = move
-        if i + 1 > len(board) - 1 or i - 1 < 0 or j + 1 > len(board) - 1 or j - 1 < 0:
-            return moves
-        for k in [-1, 0, 1]:
-            for l in [1, 0, -1]:
-                if board[i + k][i + l] == EMPTY:
-                    moves.append((i, j))
-        return moves
 
-    processed = set()
-    curMoves = set()
-    nextMoves = set()
+    nextMoves = []
     for i in range(len(board)):
         for j in range(len(board[i])):
-            if (board[i][j] == EMPTY) and (i, j) not in processed:
+            if (board[i][j] == EMPTY):
                 curMove = (i, j)
-                curMoves.add(curMove)
-                processed.add(curMove)
-                nextMoves.add(getNextMoves(curMove))
+                nextMoves.append(curMove)
 
+    nextMoves = set(nextMoves)
     return nextMoves
 
+def check_bounds(i, j, board):
+    return i < 0 or i > len(board) - 1 or j < 0 or j > len(board) - 1
+
+def check_move(i, j, board):
+    return board[i][j] != EMPTY
+
+def record_move(i, j, board):
+    MOVES_TAKEN.add((i, j))
+    FILLED_BOARD["xRows"][i] += board[i][j] == X
+    FILLED_BOARD["xCols"][j] += board[i][j] == X
+    FILLED_BOARD["xDiag"] += board[i][j] == X and i == j
+    FILLED_BOARD["xAntiDiag"] += board[i][j] == X and i + j == len(board) - 1
+    FILLED_BOARD["oRows"][i] += board[i][j] == O
+    FILLED_BOARD["oCols"][j] += board[i][j] == O
+    FILLED_BOARD["oDiag"] += board[i][j] == O and i == j
+    FILLED_BOARD["oAntiDiag"] += board[i][j] == O and i + j == len(board) - 1
+
+def count_moves(board):
+    count = 0
+    for i in range(len(board)):
+        for j in range(len(board)):
+            count += (board[i][j] == X or board[i][j] == O)
+
+    return count
+            
 
 def result(board, action):
     """
     Returns the board that results from making move (i, j) on the board.
     """
-    newBoard = deepcopy(board)
+    
     i, j = action
+    throw_exception_or_continue(check_bounds(i, j, board), BufferError)
+    throw_exception_or_continue(check_move(i, j, board), LookupError)
+
+    newBoard = deepcopy(board)
     nextPlayer = player(board) 
     newBoard[i][j] = nextPlayer
     return newBoard
@@ -78,97 +110,253 @@ def winner(board):
     """
     Returns the winner of the game, if there is one.
     """
-    win = utility(board)
-    if win == 1: 
-        return X
-    if win == -1:
-        return O
-    return None
+    xRows, xCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
+    xDiag, xAntiDiag = 0, 0
+    oRows, oCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
+    oDiag, oAntiDiag = 0, 0
 
+    def check(xRows, xCols, oRows, oCols, xDiag, oDiag):
+        for i in range(len(board)):
+            if xRows[i] == len(board) or xCols[i] == len(board):
+                return X
+            if oRows[i] == len(board) or oCols[i] == len(board):
+                return O
+            if xDiag == len(board) or xAntiDiag == len(board):
+                return X
+            if oDiag == len(board) or oAntiDiag == len(board):
+                return O
+        return None 
+
+    for i in range(len(board)):
+        for j in range(len(board)):                
+            xRows[i] += board[i][j] == X
+            xCols[j] += board[i][j] == X
+            xDiag += board[i][j] == X and i == j
+            xAntiDiag += board[i][j] == X and i + j == len(board) - 1
+
+            oRows[i] += board[i][j] == O
+            oCols[j] += board[i][j] == O
+            oDiag += board[i][j] == O and i == j
+            oAntiDiag += board[i][j] == O and i + j == len(board) - 1
+    
+    return check(xRows, xCols, oRows, oCols, xDiag, oDiag)
+
+# def tie(board):
+#     xRows, xCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
+#     xDiag, xAntiDiag = 0, 0
+#     oRows, oCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
+#     oDiag, oAntiDiag = 0, 0
+
+#     for i in range(len(board)):
+#         for j in range(len(board[i])):
+#             xRows[i] += board[i][j] == X
+#             xCols[j] += board[i][j] == X
+#             xDiag += board[i][j] == X and i == j
+#             xAntiDiag += board[i][j] == X and i + j == len(board) - 1
+
+#             oRows[i] += board[i][j] == O
+#             oCols[j] += board[i][j] == O
+#             oDiag += board[i][j] == O and i == j
+#             oAntiDiag += board[i][j] == O and i + j == len(board) - 1
+
+#         if xRows[i] + oRows[i] == len(board):
+            
 
 def terminal(board):
     """
     Returns True if game is over, False otherwise.
     """
-    # raise NotImplementedError
-    xRowCount, oRowCount = 0, 0
-    xColCount, oColCount = 0, 0
-    xDiagCount, xAntiDiagCount = 0, 0
-    oDiagCount, oAntiDiagCount = 0, 0
-    win = False
-    fillCount = 1
+    currentPlayer = winner(board)
+    if currentPlayer != None:
+        WINNER = currentPlayer
+        return True
 
-    for i in range(len(board)):
-        for j in range(len(board)):
-            if (board[i][j] == X):
-                xRowCount += 1
-                xColCount += 1
-                fillCount += 1
-            if (board[i][j] == O):
-                oRowCount += 1
-                oColCount += 1
-                fillCount += 1
+    if (count_moves(board) == len(board) * len(board[0])):
+        return True
 
-            if i == j:
-                xDiagCount += board[i][j] == X
-                oDiagCount += board[i][j] == O
-            if i + len(board) - 1 == j or j + len(board) - 1 == i:
-                xAntiDiagCount += board[i][j] == X
-                oAntiDiagCount += board[i][j] == O
-
-            if xRowCount == len(board) or xColCount == len(board) or xDiagCount == len(board) or xAntiDiagCount == len(board):
-                win = True
-                break
-            if oRowCount == len(board) or oColCount == len(board) or oDiagCount == len(board) or oAntiDiagCount == len(board):
-                win = True
-                break
-
-            if fillCount >= len(board) * len(board[0]) - 2:
-                win = True
-                break
-    
-    return win
+    return False
 
 def utility(board):
     """
     Returns 1 if X has won the game, -1 if O has won, 0 otherwise.
     """
-    isTerminal = terminal(board)
-    nextPlayer = player(board)
-    player = X if nextPlayer == O else O
+    currentPlayer = winner(board)
+    if currentPlayer == X:
+        return 1
+    if currentPlayer == O:
+        return -1
 
-    if isTerminal:
-        return 1 if player == X else -1
-    
     return 0
 
+def immediateThreeInARowThreatResponse(threat, options, board):
+    source, location = threat
+    for option in options:
+        if source == "row" and option[0] == location[0] and option[1] > location[1]:
+            return option
+        if source == "col" and option[1] == location[1] and option[0] > location[0]:
+            return option
+        if source == "diag" and option[0] == option[1] and option[0] > location[0]:
+            return option
+        if source == "antiDiag" and option[0] + option[1] == len(board) - 1 and option[0] > location[0]:
+            return option
+
+    return None
 
 def minimax(board):
     """
     Returns the optimal action for the current player on the board.
     """
-    optimal = 0
-    maxResult = -1 * math.inf
-    for a, i in enumerate(actions(board)):
-        if a > maxResult:
-            optimal = i
-            
+    currentPlayer = player(board)
+    options = actions(board)
+    optimal = None
+    if currentPlayer == X:
+        value, optimal = maxValue(board)
+        if value != 1:
+            threat = openImmediateThreeInARowThreat(board, X)
+            if threat != None:
+                option = immediateThreeInARowThreatResponse(threat, options, board)
+                optimal = option if option != None else optimal
+
+    if currentPlayer == O:
+        value, optimal = minValue(board)
+        if optimal != -1:
+            threat = openImmediateThreeInARowThreat(board, O)
+            if threat != None:
+                option = immediateThreeInARowThreatResponse(threat, options, board)
+                optimal = option if option != None else optimal
+
     return optimal
 
+def openImmediateThreeInARowThreat(board, currentPlayer):
+
+    opponentRowCount, selfRowCount = defaultdict(lambda: 0), defaultdict(lambda: 0)
+    opponentColCount, selfColCount = defaultdict(lambda: 0), defaultdict(lambda: 0)
+    opponentDiagCount, selfDiagCount = 0, 0
+    opponentAntiDiagCount, selfAntiDiagCount = 0, 0
+    threat = None
+
+    for i in range(len(board)):
+        for j in range(len(board[i])):
+            if board[i][j] == EMPTY:
+                continue
+            opponentRowCount[i] += board[i][j] != currentPlayer
+            opponentColCount[j] += board[i][j] != currentPlayer
+            selfRowCount[i] += board[i][j] == currentPlayer
+            selfColCount[j] += board[i][j] == currentPlayer
+            if i == j:
+                opponentDiagCount += (board[i][j] != currentPlayer)
+                selfDiagCount += board[i][j] == currentPlayer
+            if i + j == len(board) - 1:
+                opponentAntiDiagCount += (board[i][j] != currentPlayer)
+                selfAntiDiagCount += board[i][j] == currentPlayer
+
+            if opponentRowCount[i] == len(board) - 1 and selfRowCount[i] == 0:
+                threat = ("row", (i, j))
+                break
+
+            if opponentColCount[j] == len(board) - 1 and selfColCount[j] == 0:
+                threat = ("col", (i, j))
+                break
+
+            if opponentDiagCount == len(board) - 1 and selfDiagCount == 0:
+                threat = ("diag", (i, j))
+                break
+
+            if opponentAntiDiagCount == len(board) - 1 and selfAntiDiagCount == 0:
+                threat = ("antiDiag", (i, j))
+                break
+
+    return threat
+
+    # r, c = action
+    # opponentRowCount = 0
+    # opponentColCount = 0
+    # opponentDiagCount = 0
+    # opponentAntiDiagCount = 0
+
+    # for i in range(len(board)):
+    #     for j in range(len(board[i])):
+    #         if i == r:
+    #             opponentRowCount += (board[i][j] != currentPlayer)
+    #         if j == c:
+    #             opponentColCount += (board[i][j] != currentPlayer)
+    #         if r == c and i == j:
+    #             opponentDiagCount += 1
+    #         if r + c == len(board) - 1 and i + j == len(board) - 1:
+    #             opponentAntiDiagCount += 1
+
+    #         if opponentColCount == len(board) - 1 or opponentRowCount == len(board) - 1:
+    #             return True
+            
+    #         if opponentDiagCount == len(board) - 1 or opponentAntiDiagCount == len(board) - 1:
+    #             return True
+            
+    # return False
+
+    # r, c = action
+    # opponent = X if currentPlayer == O else O
+    # opponentRows, opponentCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
+    # opponentDiag, opponentAntiDiag = 0, 0
+    # threats = []
+
+    # for i in range(len(board)):
+    #     for j in range(len(board[i])):
+    #         if i != r:
+    #             opponentRows[i] += board[i][j] == opponent
+    #         if j != c:
+    #             opponentCols[j] += board[i][j] == opponent
+    #         if i == j and r != c:
+    #             opponentDiag += board[i][j] == opponent
+    #         if i + j == len(board) - 1 and r + c != len(board) - 1:
+    #             opponentAntiDiag += board[i][j] == opponent
+
+    #         if opponentCols[j] == len(board) - 1:
+    #             threats.append((i, j))
+    #         if opponentDiag == len(board) - 1:
+    #             threats.append((i, j))
+    #         if opponentAntiDiag == len(board) - 1:
+    #             threats.append((i, j))
+            
+    #     if opponentRows[i] == len(board) - 1:
+    #         threats.append((i, j))
+    
+    # return threats
+    
+
 def maxValue(board):
-    value = utility(board)
-    if value != 0:
-        return value
+    choice = None
+    if terminal(board):
+        return (utility(board), choice)
     v = -1 * math.inf
-    for a in actions(board):
-        v = max(v, minValue(result(board, a)))
-    return v
+    choices = actions(board)
+    currentPlayer = player(board)
+    for action in choices:
+        opponentValue = minValue(result(board, action))[0]
+        print(currentPlayer, action)
+        curMax = max(v, opponentValue)
+        if v < curMax:
+            choice = action
+        v = curMax
+        if v == 1:
+            break
+
+    return (v, choice)
 
 def minValue(board):
-    value = utility(board)
-    if value != 0:
-        return value
+    choice = None
+    if terminal(board):
+        return (utility(board), choice)
     v = math.inf
-    for a in actions(board):
-        v = min(v, maxValue(result(board, a)))
-    return v
+    choices = actions(board)
+    currentPlayer = player(board)
+    for action in choices:
+        print(currentPlayer, action)
+        opponentValue = maxValue(result(board, action))[0]
+        curMin = min(v, opponentValue)
+        if v > curMin:
+            choice = action
+        v = curMin
+        if v == -1:
+            break
+
+    return (v, choice)
