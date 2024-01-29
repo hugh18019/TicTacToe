@@ -141,27 +141,6 @@ def winner(board):
     
     return check(xRows, xCols, oRows, oCols, xDiag, oDiag)
 
-# def tie(board):
-#     xRows, xCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
-#     xDiag, xAntiDiag = 0, 0
-#     oRows, oCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
-#     oDiag, oAntiDiag = 0, 0
-
-#     for i in range(len(board)):
-#         for j in range(len(board[i])):
-#             xRows[i] += board[i][j] == X
-#             xCols[j] += board[i][j] == X
-#             xDiag += board[i][j] == X and i == j
-#             xAntiDiag += board[i][j] == X and i + j == len(board) - 1
-
-#             oRows[i] += board[i][j] == O
-#             oCols[j] += board[i][j] == O
-#             oDiag += board[i][j] == O and i == j
-#             oAntiDiag += board[i][j] == O and i + j == len(board) - 1
-
-#         if xRows[i] + oRows[i] == len(board):
-            
-
 def terminal(board):
     """
     Returns True if game is over, False otherwise.
@@ -267,61 +246,6 @@ def openImmediateThreeInARowThreat(board, currentPlayer):
                 break
 
     return threat
-
-    # r, c = action
-    # opponentRowCount = 0
-    # opponentColCount = 0
-    # opponentDiagCount = 0
-    # opponentAntiDiagCount = 0
-
-    # for i in range(len(board)):
-    #     for j in range(len(board[i])):
-    #         if i == r:
-    #             opponentRowCount += (board[i][j] != currentPlayer)
-    #         if j == c:
-    #             opponentColCount += (board[i][j] != currentPlayer)
-    #         if r == c and i == j:
-    #             opponentDiagCount += 1
-    #         if r + c == len(board) - 1 and i + j == len(board) - 1:
-    #             opponentAntiDiagCount += 1
-
-    #         if opponentColCount == len(board) - 1 or opponentRowCount == len(board) - 1:
-    #             return True
-            
-    #         if opponentDiagCount == len(board) - 1 or opponentAntiDiagCount == len(board) - 1:
-    #             return True
-            
-    # return False
-
-    # r, c = action
-    # opponent = X if currentPlayer == O else O
-    # opponentRows, opponentCols = defaultdict(lambda: 0), defaultdict(lambda: 0)
-    # opponentDiag, opponentAntiDiag = 0, 0
-    # threats = []
-
-    # for i in range(len(board)):
-    #     for j in range(len(board[i])):
-    #         if i != r:
-    #             opponentRows[i] += board[i][j] == opponent
-    #         if j != c:
-    #             opponentCols[j] += board[i][j] == opponent
-    #         if i == j and r != c:
-    #             opponentDiag += board[i][j] == opponent
-    #         if i + j == len(board) - 1 and r + c != len(board) - 1:
-    #             opponentAntiDiag += board[i][j] == opponent
-
-    #         if opponentCols[j] == len(board) - 1:
-    #             threats.append((i, j))
-    #         if opponentDiag == len(board) - 1:
-    #             threats.append((i, j))
-    #         if opponentAntiDiag == len(board) - 1:
-    #             threats.append((i, j))
-            
-    #     if opponentRows[i] == len(board) - 1:
-    #         threats.append((i, j))
-    
-    # return threats
-    
 
 def maxValue(board):
     choice = None
